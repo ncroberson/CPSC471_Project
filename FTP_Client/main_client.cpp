@@ -5,7 +5,8 @@
 #include <ws2tcpip.h>
 #include <stdlib.h>
 #include <stdio.h>
-
+#include <iostream>
+#include "UI_console.h"
 
 // Need to link with Ws2_32.lib, Mswsock.lib, and Advapi32.lib
 #pragma comment (lib, "Ws2_32.lib")
@@ -75,12 +76,16 @@ bool sendfile(SOCKET sock, FILE *f)
 
 int __cdecl main(int argc, char **argv) 
 {
+	UI_Client::UI_console * main_ui = new UI_Client::UI_console();
+	//test client UI
+	main_ui->mainloop();
+
     WSADATA wsaData;
     SOCKET ConnectSocket = INVALID_SOCKET;
     struct addrinfo *result = NULL,
                     *ptr = NULL,
                     hints;
-    char *sendbuf = "this is a test";
+    //char *sendbuf = "this is a test";
     char recvbuf[DEFAULT_BUFLEN];
     int iResult;
     int recvbuflen = DEFAULT_BUFLEN;
@@ -110,6 +115,16 @@ int __cdecl main(int argc, char **argv)
         WSACleanup();
         return 1;
     }
+
+	//todo delete
+	//print host addresses for debugging purposes
+	for (ptr = result; ptr != nullptr; ptr = ptr->ai_next) 
+	{
+		char host[256];
+		getnameinfo(ptr->ai_addr, ptr->ai_addrlen, host, sizeof(host), NULL, 0, NI_NUMERICHOST);
+		printf("%s\n", host);
+	}
+	std::cin.get();
 
     // Attempt to connect to an address until one succeeds
     for(ptr=result; ptr != NULL ;ptr=ptr->ai_next) {
@@ -142,7 +157,8 @@ int __cdecl main(int argc, char **argv)
     }
 
     // Send an initial buffer
-	FILE *filehandle = fopen("image.jpg", "rb");
+	FILE *filehandle;
+	fopen_s(&filehandle,"image.jpg", "rb");
 	if (filehandle != NULL)
 	{
 		sendfile(ConnectSocket, filehandle);
@@ -184,6 +200,9 @@ int __cdecl main(int argc, char **argv)
     // cleanup
     closesocket(ConnectSocket);
     WSACleanup();
+
+	//delete ui pointer
+	delete main_ui;
 
     return 0;
 }

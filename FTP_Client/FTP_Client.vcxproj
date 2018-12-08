@@ -116,6 +116,10 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="main_client.cpp" />
+    <ClCompile Include="UI_console.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="UI_console.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

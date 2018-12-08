@@ -157,7 +157,8 @@ int __cdecl main(void)
 
     // Receive until the peer shuts down the connection
     do {
-		FILE *filehandle = fopen("imagefile.jpg", "wb");
+		FILE *filehandle;
+		fopen_s(&filehandle,"imagefile.jpg", "wb");
 	if (filehandle != NULL)
 	{
 		bool ok = readfile(ClientSocket, filehandle);
