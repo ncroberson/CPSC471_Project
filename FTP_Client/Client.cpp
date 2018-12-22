@@ -27,10 +27,16 @@ int Domain::Client::init()
 
 int Domain::Client::resolve(std::string host, std::string port)
 {
+	char* chost;
+	if (host == "") 
+	{
+		chost = NULL;
+	}
+	else chost = const_cast<char *>(host.c_str());
 	std::string res_port = port;
 	if (res_port == "0") res_port = DEFAULT_PORT;
 	// Resolve the server address and port
-	iResult = getaddrinfo(host.c_str(), res_port.c_str(), &hints, &result);
+	iResult = getaddrinfo(chost, res_port.c_str(), &hints, &result);
 	if (iResult != 0) {
 		printf("getaddrinfo failed with error: %d\n", iResult);
 		WSACleanup();
@@ -45,7 +51,6 @@ int Domain::Client::resolve(std::string host, std::string port)
 		getnameinfo(ptr->ai_addr, ptr->ai_addrlen, host, sizeof(host), NULL, 0, NI_NUMERICHOST);
 		printf("%s\n", host);
 	}
-	std::cin.get();
 
 	return 0;
 }
@@ -82,6 +87,18 @@ int Domain::Client::cli_connect()
 		return 1;
 	}
 
+	return 0;
+}
+
+int Domain::Client::data_connect()
+{
+	data_sock = accept(data_sock, NULL , NULL);
+	if (data_sock == INVALID_SOCKET) {
+		printf("accept failed with error: %d\n", WSAGetLastError());
+		closesocket(data_sock);
+		WSACleanup();
+		return 1;
+	}
 	return 0;
 }
 
@@ -169,6 +186,39 @@ bool Domain::Client::sendcommand(std::string command)
 	if (sendResult == SOCKET_ERROR)
 		return false;
 	return true;
+}
+
+int Domain::Client::listen_for_data()
+{
+	data_sock = socket(result->ai_family, result->ai_socktype, result->ai_protocol);
+	if (data_sock == INVALID_SOCKET) {
+		printf("socket failed with error: %ld\n", WSAGetLastError());
+		freeaddrinfo(result);
+		WSACleanup();
+		return 1;
+	}
+
+	// Setup the TCP listening socket
+	iResult = bind(data_sock, result->ai_addr, (int)result->ai_addrlen);
+	if (iResult == SOCKET_ERROR) {
+		printf("bind failed with error: %d\n", WSAGetLastError());
+		freeaddrinfo(result);
+		closesocket(data_sock);
+		WSACleanup();
+		return 1;
+	}
+
+	freeaddrinfo(result);
+
+	iResult = listen(data_sock, SOMAXCONN);
+	if (iResult == SOCKET_ERROR) {
+		printf("listen failed with error: %d\n", WSAGetLastError());
+		closesocket(data_sock);
+		WSACleanup();
+		return 1;
+	}
+
+	return 0;
 }
 
 bool Domain::Client::recieveresponse()

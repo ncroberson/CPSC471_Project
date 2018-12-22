@@ -15,7 +15,7 @@
 #pragma comment (lib, "AdvApi32.lib")
 
 #define DEFAULT_BUFLEN 512
-#define DEFAULT_PORT "27015"
+#define DEFAULT_PORT "21"
 
 namespace Domain 
 {
@@ -26,6 +26,7 @@ namespace Domain
 		int init();
 		int resolve(std::string host, std::string port);
 		int cli_connect();
+		int data_connect();
 		bool senddata(void *buf, int buflen);
 		bool sendfile(FILE *f);
 		bool sendlong(long value);
@@ -33,6 +34,7 @@ namespace Domain
 		bool readlong(long *value);
 		bool readfile(FILE *f);
 		bool sendcommand(std::string command);
+		int listen_for_data();
 		bool recieveresponse();
 		bool recievedata();
 		void clean_up();

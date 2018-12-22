@@ -177,8 +177,11 @@ bool UI_Client::UI_console::put(std::string fname, std::string & message)
 bool UI_Client::UI_console::list(std::string & message)
 {
 	std::string command = "list";
+	client->resolve("", "20");
+	client->listen_for_data();
 	if (client->sendcommand(command))
 	{
+		client->data_connect();
 		message = "list succeeded.";
 		return true;
 	}

@@ -120,6 +120,24 @@ int Domain::Server::resolve_server()
 
 int Domain::Server::resolve_client()
 {
+	char str[INET_ADDRSTRLEN];
+	PCSTR client_ip = inet_ntop(AF_INET, &(client_addr.sin_addr), str, INET_ADDRSTRLEN);
+	// Resolve the server address and port
+	iResult = getaddrinfo(client_ip, "20", &hints, &result);
+	if (iResult != 0) {
+		printf("getaddrinfo failed with error: %d\n", iResult);
+		WSACleanup();
+		return 1;
+	}
+
+	//todo delete
+//print host addresses for debugging purposes
+	for (ptr = result; ptr != nullptr; ptr = ptr->ai_next)
+	{
+		char host[256];
+		getnameinfo(ptr->ai_addr, ptr->ai_addrlen, host, sizeof(host), NULL, 0, NI_NUMERICHOST);
+		printf("%s\n", host);
+	}
 	return 0;
 }
 
@@ -137,6 +155,43 @@ int Domain::Server::control_connect()
 	}
 	return 0;
 }
+
+
+int Domain::Server::data_connect()
+{
+	// Attempt to connect to an address until one succeeds
+	for (ptr = result; ptr != NULL; ptr = ptr->ai_next) {
+
+		// Create a SOCKET for connecting to client
+		data_sock = socket(ptr->ai_family, ptr->ai_socktype,
+			ptr->ai_protocol);
+		if (data_sock == INVALID_SOCKET) {
+			printf("socket failed with error: %ld\n", WSAGetLastError());
+			WSACleanup();
+			return 1;
+		}
+
+		// Connect to client.
+		iResult = connect(data_sock, ptr->ai_addr, (int)ptr->ai_addrlen);
+		if (iResult == SOCKET_ERROR) {
+			closesocket(data_sock);
+			data_sock = INVALID_SOCKET;
+			continue;
+		}
+		break;
+	}
+
+	freeaddrinfo(result);
+
+	if (data_sock == INVALID_SOCKET) {
+		printf("Unable to connect to server!\n");
+		WSACleanup();
+		return 1;
+	}
+
+	return 0;
+}
+
 
 std::string Domain::Server::get_command()
 {
@@ -160,11 +215,12 @@ int Domain::Server::parse_command(std::string pcommand)
 {	
 	if (pcommand == "") return 1;
 	std::cout << "Command recieved: " << pcommand << "\n";
-	return 0;
-}
-
-int Domain::Server::data_connect()
-{
+	
+	if (pcommand == "list") 
+	{
+		resolve_client();
+		data_connect();
+	}
 	return 0;
 }
 
