@@ -17,7 +17,7 @@
 #pragma comment (lib, "AdvApi32.lib")
 
 #define DEFAULT_BUFLEN 512
-#define DEFAULT_PORT "21"
+#define DEFAULT_PORT "21000"
 
 namespace Domain 
 {

@@ -12,7 +12,7 @@ UI_Client::UI_console::UI_console(Domain::Client * cli): host_name(""), port("")
 void UI_Client::UI_console::mainloop()
 {
 	//init connect_sock, resolve hostname nad port, try to connect to server
-	if (client->init() || client->resolve(host_name, port) || client->cli_connect())
+	if (client->init() || client->resolve_server(host_name, port) || client->cli_connect())
 	{	//if any return non zero, print error and return;
 		printf_s("Connection could not be established, please try again...");
 		std::cin.get();
@@ -177,7 +177,8 @@ bool UI_Client::UI_console::put(std::string fname, std::string & message)
 bool UI_Client::UI_console::list(std::string & message)
 {
 	std::string command = "list";
-	client->resolve("", "20");
+	client->init();
+	client->resolve_client();
 	client->listen_for_data();
 	if (client->sendcommand(command))
 	{

@@ -15,7 +15,7 @@
 #pragma comment (lib, "AdvApi32.lib")
 
 #define DEFAULT_BUFLEN 512
-#define DEFAULT_PORT "21"
+#define DEFAULT_PORT "21000"
 
 namespace Domain 
 {
@@ -24,7 +24,9 @@ namespace Domain
 	public:
 		Client();
 		int init();
-		int resolve(std::string host, std::string port);
+		//int resolve(std::string host, std::string port);
+		int resolve_client();
+		int resolve_server(std::string host, std::string port);
 		int cli_connect();
 		int data_connect();
 		bool senddata(void *buf, int buflen);

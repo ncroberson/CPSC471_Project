@@ -25,33 +25,56 @@ int Domain::Client::init()
 	return 0;
 }
 
-int Domain::Client::resolve(std::string host, std::string port)
+//int Domain::Client::resolve(std::string host, std::string port)
+//{
+//	char* chost;
+//	if (host == "") 
+//	{
+//		chost = NULL;
+//	}
+//	else chost = const_cast<char *>(host.c_str());
+//	std::string res_port = port;
+//	if (res_port == "0") res_port = DEFAULT_PORT;
+//	// Resolve the server address and port
+//	iResult = getaddrinfo(chost, res_port.c_str(), &hints, &result);
+//	if (iResult != 0) {
+//		printf("getaddrinfo failed with error: %d\n", iResult);
+//		WSACleanup();
+//		return 1;
+//	}
+//
+//	//todo delete
+//	//print host addresses for debugging purposes
+//	for (ptr = result; ptr != nullptr; ptr = ptr->ai_next)
+//	{
+//		char host[256];
+//		getnameinfo(ptr->ai_addr, ptr->ai_addrlen, host, sizeof(host), NULL, 0, NI_NUMERICHOST);
+//		printf("%s\n", host);
+//	}
+//
+//	return 0;
+//}
+
+int Domain::Client::resolve_client()
 {
-	char* chost;
-	if (host == "") 
-	{
-		chost = NULL;
-	}
-	else chost = const_cast<char *>(host.c_str());
-	std::string res_port = port;
-	if (res_port == "0") res_port = DEFAULT_PORT;
-	// Resolve the server address and port
-	iResult = getaddrinfo(chost, res_port.c_str(), &hints, &result);
+	iResult = getaddrinfo(NULL, "21000", &hints, &result);
 	if (iResult != 0) {
 		printf("getaddrinfo failed with error: %d\n", iResult);
 		WSACleanup();
 		return 1;
 	}
+	return 0;
+}
 
-	//todo delete
-	//print host addresses for debugging purposes
-	for (ptr = result; ptr != nullptr; ptr = ptr->ai_next)
-	{
-		char host[256];
-		getnameinfo(ptr->ai_addr, ptr->ai_addrlen, host, sizeof(host), NULL, 0, NI_NUMERICHOST);
-		printf("%s\n", host);
+int Domain::Client::resolve_server(std::string host, std::string port)
+{
+	// Resolve the server address and port
+	iResult = getaddrinfo(host.c_str(), port.c_str(), &hints, &result);
+	if (iResult != 0) {
+		printf("getaddrinfo failed with error: %d\n", iResult);
+		WSACleanup();
+		return 1;
 	}
-
 	return 0;
 }
 

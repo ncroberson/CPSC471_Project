@@ -123,7 +123,7 @@ int Domain::Server::resolve_client()
 	char str[INET_ADDRSTRLEN];
 	PCSTR client_ip = inet_ntop(AF_INET, &(client_addr.sin_addr), str, INET_ADDRSTRLEN);
 	// Resolve the server address and port
-	iResult = getaddrinfo(client_ip, "20", &hints, &result);
+	iResult = getaddrinfo(client_ip, "20000", &hints, &result);
 	if (iResult != 0) {
 		printf("getaddrinfo failed with error: %d\n", iResult);
 		WSACleanup();
