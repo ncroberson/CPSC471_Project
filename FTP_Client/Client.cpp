@@ -4,6 +4,7 @@ Domain::Client::Client()
 {
 	control_sock = INVALID_SOCKET;
 	data_sock = INVALID_SOCKET;
+	ldata_sock = INVALID_SOCKET;
 	this->init();
 	result = NULL;
 	ptr = NULL;
@@ -115,7 +116,7 @@ int Domain::Client::cli_connect()
 
 int Domain::Client::data_connect()
 {
-	data_sock = accept(data_sock, NULL , NULL);
+	data_sock = accept(ldata_sock, NULL , NULL);
 	if (data_sock == INVALID_SOCKET) {
 		printf("accept failed with error: %d\n", WSAGetLastError());
 		closesocket(data_sock);
@@ -213,8 +214,8 @@ bool Domain::Client::sendcommand(std::string command)
 
 int Domain::Client::listen_for_data()
 {
-	data_sock = socket(result->ai_family, result->ai_socktype, result->ai_protocol);
-	if (data_sock == INVALID_SOCKET) {
+	ldata_sock = socket(result->ai_family, result->ai_socktype, result->ai_protocol);
+	if (ldata_sock == INVALID_SOCKET) {
 		printf("socket failed with error: %ld\n", WSAGetLastError());
 		freeaddrinfo(result);
 		WSACleanup();
@@ -222,21 +223,21 @@ int Domain::Client::listen_for_data()
 	}
 
 	// Setup the TCP listening socket
-	iResult = bind(data_sock, result->ai_addr, (int)result->ai_addrlen);
+	iResult = bind(ldata_sock, result->ai_addr, (int)result->ai_addrlen);
 	if (iResult == SOCKET_ERROR) {
 		printf("bind failed with error: %d\n", WSAGetLastError());
 		freeaddrinfo(result);
-		closesocket(data_sock);
+		closesocket(ldata_sock);
 		WSACleanup();
 		return 1;
 	}
 
 	freeaddrinfo(result);
 
-	iResult = listen(data_sock, SOMAXCONN);
+	iResult = listen(ldata_sock, SOMAXCONN);
 	if (iResult == SOCKET_ERROR) {
 		printf("listen failed with error: %d\n", WSAGetLastError());
-		closesocket(data_sock);
+		closesocket(ldata_sock);
 		WSACleanup();
 		return 1;
 	}

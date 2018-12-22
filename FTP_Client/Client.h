@@ -43,6 +43,7 @@ namespace Domain
 	private:
 		SOCKET control_sock;
 		SOCKET data_sock;
+		SOCKET ldata_sock;
 		WSADATA cli_wsa;
 		struct addrinfo *result,
 			*ptr,
