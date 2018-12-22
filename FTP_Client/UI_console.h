@@ -2,6 +2,7 @@
 #define UI_CONSOLE_H
 
 #include <string>
+#include "Client.h"
 
 namespace UI_Client
 {
@@ -9,6 +10,7 @@ namespace UI_Client
 	{
 	public:
 		UI_console();
+		UI_console(Domain::Client*);
 		void mainloop();
 		void prompt();
 		bool get_command(size_t &end, std::string &command_str);
@@ -19,9 +21,11 @@ namespace UI_Client
 		bool put(std::string fname, std::string &message);
 		bool list(std::string &message);
 		bool quit(std::string &message);
+		void set_params(std::string h, std::string p);
 	private:
 		std::string host_name;
-		int port;
+		Domain::Client* client;
+		std::string port;
 		bool quit_loop;
 
 	};

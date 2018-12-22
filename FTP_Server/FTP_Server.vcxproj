@@ -116,9 +116,11 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="main_server.cpp" />
+    <ClCompile Include="Server.cpp" />
     <ClCompile Include="UI_console.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Server.h" />
     <ClInclude Include="UI_console.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

@@ -1,15 +1,17 @@
-#ifndef CLIENT_H
-#define CLIENT_H
+
+#ifndef SERVER_H
+#define SERVER_H
 
 #define WIN32_LEAN_AND_MEAN
 
 #include <windows.h>
 #include <winsock2.h>
 #include <ws2tcpip.h>
+#include <stdlib.h>
 #include <stdio.h>
-#include <iostream>
+#include <string>
 
-// Need to link with Ws2_32.lib, Mswsock.lib, and Advapi32.lib
+// Need to link with Ws2_32.lib
 #pragma comment (lib, "Ws2_32.lib")
 #pragma comment (lib, "Mswsock.lib")
 #pragma comment (lib, "AdvApi32.lib")
@@ -19,34 +21,43 @@
 
 namespace Domain 
 {
-	class Client 
+	class Server 
 	{
 	public:
-		Client();
+		Server();
 		int init();
-		int resolve(std::string host, std::string port);
-		int cli_connect();
 		bool senddata(void *buf, int buflen);
 		bool sendfile(FILE *f);
 		bool sendlong(long value);
 		bool readdata(void *buf, int buflen);
 		bool readlong(long *value);
 		bool readfile(FILE *f);
-		bool sendcommand(std::string command);
-		bool recieveresponse();
-		bool recievedata();
-		void clean_up();
+		int resolve_server();
+		int resolve_client();
+		int control_connect();
+		std::string get_command();
+		int parse_command(std::string);
+		int data_connect();
+		int listen_for_conn();
+		std::string get_client_ip();
+		int clean_up();
+		bool getCloseConn();
 	private:
-		SOCKET control_sock;
+		SOCKET listen_sock;
+		SOCKET client_sock;
 		SOCKET data_sock;
-		WSADATA cli_wsa;
+		sockaddr_in client_addr;
+		int addrlen;
+		WSADATA serv_wsa;
 		struct addrinfo *result,
 			*ptr,
 			hints;
 		int iResult;
+		bool close_connection;
 	};
-
 }
+
+
 
 
 #endif

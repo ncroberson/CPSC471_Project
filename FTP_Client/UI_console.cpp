@@ -4,8 +4,25 @@
 
 UI_Client::UI_console::UI_console(): host_name(""), port(0), quit_loop(false) {}
 
+UI_Client::UI_console::UI_console(Domain::Client * cli): host_name(""), port(""), quit_loop(false)
+{
+	client = cli;
+}
+
 void UI_Client::UI_console::mainloop()
 {
+	//init connect_sock, resolve hostname nad port, try to connect to server
+	if (client->init() || client->resolve(host_name, port) || client->cli_connect())
+	{	//if any return non zero, print error and return;
+		printf_s("Connection could not be established, please try again...");
+		std::cin.get();
+		return;
+	}
+	else 
+	{
+		printf_s("Connection to server successfully established!\n");
+	}
+
 	while (!quit_loop) 
 	{
 		prompt();
@@ -129,27 +146,69 @@ void UI_Client::UI_console::run_command(std::string command, std::string fname)
 
 bool UI_Client::UI_console::get(std::string fname, std::string & message)
 {
-	return true;
-	message = "get succeeded.";
+	std::string command = "get|" + fname;
+	if (client->sendcommand(command))
+	{
+		message = "get succeeded.";
+		return true;
+	}
+	else
+	{
+		message = "get failed.";
+		return false;
+	}
 }
 
 bool UI_Client::UI_console::put(std::string fname, std::string & message)
 {
-	return true;
-	message = "put succeeded.";
+	std::string command = "put|" + fname;
+	if (client->sendcommand(command)) 
+	{
+		message = "put succeeded.";
+		return true;
+	}
+	else 
+	{
+		message = "put failed.";
+		return false;
+	}
 }
 
 bool UI_Client::UI_console::list(std::string & message)
 {
-	return true;
-	message = "ls succeeded.";
+	std::string command = "list";
+	if (client->sendcommand(command))
+	{
+		message = "list succeeded.";
+		return true;
+	}
+	else
+	{
+		message = "list failed.";
+		return false;
+	}
 }
 
 bool UI_Client::UI_console::quit(std::string &message)
 {
 	quit_loop = true;
-	message = "quit succeeded.";
-	return true;
+	std::string command = "quit";
+	if (client->sendcommand(command))
+	{
+		message = "quit succeeded.";
+		return true;
+	}
+	else
+	{
+		message = "quit failed.";
+		return false;
+	}
+}
+
+void UI_Client::UI_console::set_params(std::string h, std::string p)
+{
+	host_name = h;
+	port = p;
 }
 
 	
