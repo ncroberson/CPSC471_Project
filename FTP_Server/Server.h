@@ -29,12 +29,14 @@ namespace Domain
 		bool senddata(void *buf, int buflen);
 		bool sendfile(FILE *f);
 		bool sendlong(long value);
+		bool sendstring(std::string s);
 		bool readdata(void *buf, int buflen);
 		bool readlong(long *value);
 		bool readfile(FILE *f);
 		bool list();
 		bool get(std::string filename);
 		bool put(std::string filename);
+		std::string get_path();
 		int resolve_server();
 		int resolve_client();
 		int control_connect();

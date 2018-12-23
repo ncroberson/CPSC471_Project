@@ -153,6 +153,18 @@ bool UI_Client::UI_console::get(std::string fname, std::string & message)
 	if (client->sendcommand(command))
 	{
 		client->data_connect();
+		long bytes_read;
+		std::string path = client->get_path();
+		path += fname;
+		FILE *file;
+		fopen_s(&file, path.c_str(), "wb");
+		if (file != NULL) 
+		{
+			client->readfile(file);
+			fclose(file);
+		}
+		
+		else return false;
 		message = "get succeeded.";
 		client->clean_up_data();
 		return true;
@@ -172,6 +184,17 @@ bool UI_Client::UI_console::put(std::string fname, std::string & message)
 	if (client->sendcommand(command)) 
 	{
 		client->data_connect();
+		long bytes_read;
+		std::string path = client->get_path();
+		path += fname;
+		FILE *file;
+		fopen_s(&file, path.c_str(), "rb");
+		if (file != NULL)
+		{
+			client->sendfile(file);
+			fclose(file);
+		}
+		else return false;
 		message = "put succeeded.";
 		client->clean_up_data();
 		return true;
@@ -190,8 +213,13 @@ bool UI_Client::UI_console::list(std::string & message)
 	client->listen_for_data();
 	if (client->sendcommand(command))
 	{
+		std::string listing;
 		client->data_connect();
+		long bytes_read;
+		client->readstring(listing, bytes_read);
 		message = "list succeeded.";
+		std::cout << listing << std::endl;
+		std::cout << "Bytes transfered: " << bytes_read << std::endl;
 		client->clean_up_data();
 		return true;
 	}

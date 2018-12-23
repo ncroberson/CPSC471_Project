@@ -184,19 +184,105 @@ bool Domain::Client::sendlong(long value)
 	return senddata(&value, sizeof(value));
 }
 
+
 bool Domain::Client::readdata(void * buf, int buflen)
 {
-	return false;
+	unsigned char *pbuf = (unsigned char *)buf;
+
+	while (buflen > 0)
+	{
+		int num = recv(data_sock, reinterpret_cast<char*>(pbuf), buflen, 0);
+		if (num == SOCKET_ERROR)
+		{
+			if (WSAGetLastError() == WSAEWOULDBLOCK)
+			{
+				// optional: use select() to check for timeout to fail the read
+				continue;
+			}
+			return false;
+		}
+		else if (num == 0)
+			return false;
+
+		pbuf += num;
+		buflen -= num;
+	}
+
+	return true;
 }
 
 bool Domain::Client::readlong(long * value)
 {
-	return false;
+	if (!readdata(value, sizeof(value)))
+		return false;
+	*value = ntohl(*value);
+	return true;
 }
 
 bool Domain::Client::readfile(FILE * f)
 {
-	return false;
+	long filesize;
+	if (!readlong(&filesize))
+		return false;
+	if (filesize > 0)
+	{
+		char buffer[1024];
+		do
+		{
+			int num = min(filesize, sizeof(buffer));
+			if (!readdata(buffer, num))
+				return false;
+			int offset = 0;
+			do
+			{
+				size_t written = fwrite(&buffer[offset], 1, num - offset, f);
+				if (written < 1)
+					return false;
+				offset += written;
+			} while (offset < num);
+			filesize -= num;
+		} while (filesize > 0);
+	}
+	return true;
+}
+
+bool Domain::Client::readstring(std::string& output, long &bytes) 
+{
+	long size;
+	if (!readlong(&size))
+		return false;
+	bytes = 0;
+	if (size > 0)
+	{
+		char buffer[DEFAULT_BUFLEN];
+		do
+		{
+			int num = min(size, sizeof(buffer));
+			if (!readdata(buffer, num))
+				return false;
+			output.append(buffer, num);
+			size -= num;
+			bytes += num;
+		} while (size > 0);
+	}
+	return true;
+}
+
+std::string Domain::Client::get_path()
+{
+	std::string path = "";
+	char buffer[MAX_PATH];
+	GetModuleFileName(NULL, buffer, MAX_PATH);
+	path = std::string(buffer);
+	int last = path.find_last_of("\\/");
+	path = path.substr(0, last);
+	last = path.find_last_of("\\/");
+	path = path.substr(0, last);
+	path += "\\files\\";
+	CreateDirectory(path.c_str(), NULL);
+	path += "client\\";
+	CreateDirectory(path.c_str(), NULL);
+	return path;	
 }
 
 bool Domain::Client::sendcommand(std::string command) 
@@ -245,14 +331,19 @@ int Domain::Client::listen_for_data()
 	return 0;
 }
 
-bool Domain::Client::recieveresponse()
+unsigned char Domain::Client::recieveresponse()
 {
-	return false;
-}
-
-bool Domain::Client::recievedata()
-{
-	return false;
+	int getResult = 0;
+	char buf[1];
+	if ((getResult = recv(data_sock, buf, 1, 0)) > 0)
+	{
+		return buf[1];
+	}
+	else if (getResult == SOCKET_ERROR)
+	{
+		return 255;
+	}
+	else return 0;
 }
 
 int Domain::Client::clean_up()

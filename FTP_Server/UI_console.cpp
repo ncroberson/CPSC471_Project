@@ -25,7 +25,6 @@ void UI_Server::UI_console::mainloop()
 		std::cout << "Client connected from IP: " << server->get_client_ip() << "\n";
 		while (!server->getCloseConn()) 
 		{
-			server->init();
 			//get command, sent from client
 			std::cout << "Awaiting commands...\n";
 			std::string command = server->get_command();

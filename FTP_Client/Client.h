@@ -35,10 +35,11 @@ namespace Domain
 		bool readdata(void *buf, int buflen);
 		bool readlong(long *value);
 		bool readfile(FILE *f);
+		bool readstring(std::string& output, long &bytes);
+		std::string get_path();
 		bool sendcommand(std::string command);
 		int listen_for_data();
-		bool recieveresponse();
-		bool recievedata();
+		unsigned char recieveresponse();
 		int clean_up();
 		int clean_up_data();
 	private:

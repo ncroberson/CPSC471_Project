@@ -32,17 +32,90 @@ int Domain::Server::init()
 
 bool Domain::Server::senddata(void * buf, int buflen)
 {
-	return false;
+	unsigned char *pbuf = (unsigned char *)buf;
+
+	while (buflen > 0)
+	{
+		int num = send(data_sock, reinterpret_cast<char*>(pbuf), buflen, 0);
+		if (num == SOCKET_ERROR)
+		{
+			if (WSAGetLastError() == WSAEWOULDBLOCK)
+			{
+				// optional: use select() to check for timeout to fail the send
+				continue;
+			}
+			return false;
+		}
+
+		pbuf += num;
+		buflen -= num;
+	}
+
+	return true;
 }
 
 bool Domain::Server::sendfile(FILE * f)
 {
-	return false;
+	fseek(f, 0, SEEK_END);
+	long filesize = ftell(f);
+	rewind(f);
+	if (filesize == EOF)
+		return false;
+	if (!sendlong(filesize))
+		return false;
+	if (filesize > 0)
+	{
+		char buffer[1024];
+		do
+		{
+			size_t num = min(filesize, sizeof(buffer));
+			num = fread(buffer, 1, num, f);
+			if (num < 1)
+				return false;
+			if (!senddata(buffer, num))
+				return false;
+			filesize -= num;
+		} while (filesize > 0);
+	}
+	return true;
 }
 
 bool Domain::Server::sendlong(long value)
 {
-	return false;
+	value = htonl(value);
+	return senddata(&value, sizeof(value));
+}
+
+bool Domain::Server::sendstring(std::string s)
+{
+	long size = (long)s.size();
+	if (size == 0) 
+	{
+		return false;
+	}
+	if (!sendlong(size))
+	{
+		return false;
+	}
+	if (size > 0)
+	{
+		int start = 0;
+		std::string buffer;
+		do 
+		{
+			
+			size_t num = min(size, DEFAULT_BUFLEN);
+			buffer = s.substr(start, num);
+			if (!senddata(&buffer[0], buffer.size()))
+			{
+				return false;
+			}
+			size -= num;
+			start += num;
+
+		} while (size > 0);
+	}
+	return true;
 }
 
 bool Domain::Server::readdata(void *buf, int buflen)
@@ -108,17 +181,75 @@ bool Domain::Server::readfile(FILE *f)
 
 bool Domain::Server::list()
 {
-	return false;
+	std::string listing = "";
+	std::string path = get_path();
+	path += "*";
+	WIN32_FIND_DATA data;
+	HANDLE hFind = FindFirstFile( path.c_str(), &data);
+
+	if (hFind == INVALID_HANDLE_VALUE) 
+	{
+		listing = "No files found.";
+	}
+	else 
+	{
+		listing += "\nList of Files\n------------------------------------------\n";
+		do {
+			listing += data.cFileName;
+			listing += "\n";
+		} while (FindNextFile(hFind, &data));
+		FindClose(hFind);
+	}
+	listing += "------------------------------------------\n";
+	sendstring(listing);
+	return true;
 }
 
 bool Domain::Server::get(std::string filename)
 {
-	return false;
+	std::string path = get_path();
+	path += filename;
+	FILE *file;
+	fopen_s(&file ,path.c_str(), "rb");
+	if (file != NULL)
+	{
+		bool success = sendfile(file);
+		fclose(file);
+		return success;
+	}
+	else return false;
 }
 
 bool Domain::Server::put(std::string filename)
 {
-	return false;
+	std::string path = get_path();
+	path += filename;
+	FILE *file;
+	fopen_s(&file, path.c_str(), "wb");
+	if (file != NULL)
+	{
+		bool success = readfile(file);
+		fclose(file);
+		return success;
+	}
+	else return false;
+}
+
+std::string Domain::Server::get_path()
+{
+	std::string path = "";
+	char buffer[MAX_PATH];
+	GetModuleFileName(NULL, buffer, MAX_PATH);
+	path = std::string(buffer);
+	int last = path.find_last_of("\\/");
+	path = path.substr(0, last);
+	last = path.find_last_of("\\/");
+	path = path.substr(0, last);
+	path += "\\files\\";
+	CreateDirectory(path.c_str(), NULL);
+	path += "server\\";
+	CreateDirectory(path.c_str(), NULL);
+	return path;
 }
 
 int Domain::Server::resolve_server()
@@ -255,7 +386,7 @@ int Domain::Server::parse_command(std::string pcommand)
 		std::cout << filename << std::endl;
 		resolve_client();
 		data_connect();
-		get(filename);
+		put(filename);
 		clean_up_data();
 	}
 	else 
