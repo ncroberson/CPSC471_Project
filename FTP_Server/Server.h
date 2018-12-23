@@ -32,6 +32,9 @@ namespace Domain
 		bool readdata(void *buf, int buflen);
 		bool readlong(long *value);
 		bool readfile(FILE *f);
+		bool list();
+		bool get(std::string filename);
+		bool put(std::string filename);
 		int resolve_server();
 		int resolve_client();
 		int control_connect();
@@ -41,6 +44,7 @@ namespace Domain
 		int listen_for_conn();
 		std::string get_client_ip();
 		int clean_up();
+		int clean_up_data();
 		bool getCloseConn();
 	private:
 		SOCKET listen_sock;

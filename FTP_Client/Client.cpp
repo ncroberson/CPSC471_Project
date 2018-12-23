@@ -19,10 +19,13 @@ int Domain::Client::init()
 	}
 
 	ZeroMemory(&hints, sizeof(hints));
-	hints.ai_family = AF_UNSPEC;
+	hints.ai_family = AF_INET;
 	hints.ai_socktype = SOCK_STREAM;
 	hints.ai_protocol = IPPROTO_TCP;
 	hints.ai_flags = AI_PASSIVE;
+
+	result = NULL;
+	ptr = NULL;
 
 	return 0;
 }
@@ -59,10 +62,9 @@ int Domain::Client::init()
 
 int Domain::Client::resolve_client()
 {
-	iResult = getaddrinfo(NULL, "21000", &hints, &result);
+	iResult = getaddrinfo(NULL, "20000", &hints, &result);
 	if (iResult != 0) {
 		printf("getaddrinfo failed with error: %d\n", iResult);
-		WSACleanup();
 		return 1;
 	}
 	return 0;
@@ -121,7 +123,6 @@ int Domain::Client::data_connect()
 	if (data_sock == INVALID_SOCKET) {
 		printf("accept failed with error: %d\n", WSAGetLastError());
 		closesocket(data_sock);
-		WSACleanup();
 		return 1;
 	}
 	return 0;
@@ -219,7 +220,6 @@ int Domain::Client::listen_for_data()
 	if (ldata_sock == INVALID_SOCKET) {
 		printf("socket failed with error: %ld\n", WSAGetLastError());
 		freeaddrinfo(result);
-		WSACleanup();
 		return 1;
 	}
 
@@ -229,7 +229,6 @@ int Domain::Client::listen_for_data()
 		printf("bind failed with error: %d\n", WSAGetLastError());
 		freeaddrinfo(result);
 		closesocket(ldata_sock);
-		WSACleanup();
 		return 1;
 	}
 
@@ -239,9 +238,9 @@ int Domain::Client::listen_for_data()
 	if (iResult == SOCKET_ERROR) {
 		printf("listen failed with error: %d\n", WSAGetLastError());
 		closesocket(ldata_sock);
-		WSACleanup();
 		return 1;
 	}
+
 
 	return 0;
 }
@@ -256,8 +255,33 @@ bool Domain::Client::recievedata()
 	return false;
 }
 
-void Domain::Client::clean_up()
+int Domain::Client::clean_up()
 {
+	iResult = shutdown(control_sock, SD_BOTH);
+	if (iResult == SOCKET_ERROR) {
+		printf("shutdown failed with error: %d\n", WSAGetLastError());
+		closesocket(control_sock);
+		WSACleanup();
+		return 1;
+	}
 	closesocket(control_sock);
 	WSACleanup();
+	return 0;
+}
+
+int Domain::Client::clean_up_data()
+{
+	iResult = shutdown(data_sock, SD_BOTH);
+	if (iResult == SOCKET_ERROR) {
+		printf("shutdown failed with error: %d\n", WSAGetLastError());
+		closesocket(data_sock);
+		return 1;
+	}
+
+	shutdown(ldata_sock, SD_BOTH);
+	closesocket(ldata_sock);
+	closesocket(data_sock);
+	data_sock = INVALID_SOCKET;
+	ldata_sock = INVALID_SOCKET;
+	return 0;
 }

@@ -27,6 +27,7 @@ void UI_Client::UI_console::mainloop()
 	{
 		prompt();
 	}
+	client->clean_up();
 }
 
 void UI_Client::UI_console::prompt()
@@ -147,9 +148,13 @@ void UI_Client::UI_console::run_command(std::string command, std::string fname)
 bool UI_Client::UI_console::get(std::string fname, std::string & message)
 {
 	std::string command = "get|" + fname;
+	client->resolve_client();
+	client->listen_for_data();
 	if (client->sendcommand(command))
 	{
+		client->data_connect();
 		message = "get succeeded.";
+		client->clean_up_data();
 		return true;
 	}
 	else
@@ -162,9 +167,13 @@ bool UI_Client::UI_console::get(std::string fname, std::string & message)
 bool UI_Client::UI_console::put(std::string fname, std::string & message)
 {
 	std::string command = "put|" + fname;
+	client->resolve_client();
+	client->listen_for_data();
 	if (client->sendcommand(command)) 
 	{
+		client->data_connect();
 		message = "put succeeded.";
+		client->clean_up_data();
 		return true;
 	}
 	else 
@@ -177,13 +186,13 @@ bool UI_Client::UI_console::put(std::string fname, std::string & message)
 bool UI_Client::UI_console::list(std::string & message)
 {
 	std::string command = "list";
-	client->init();
 	client->resolve_client();
 	client->listen_for_data();
 	if (client->sendcommand(command))
 	{
 		client->data_connect();
 		message = "list succeeded.";
+		client->clean_up_data();
 		return true;
 	}
 	else

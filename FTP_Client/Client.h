@@ -39,7 +39,8 @@ namespace Domain
 		int listen_for_data();
 		bool recieveresponse();
 		bool recievedata();
-		void clean_up();
+		int clean_up();
+		int clean_up_data();
 	private:
 		SOCKET control_sock;
 		SOCKET data_sock;

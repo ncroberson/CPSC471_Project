@@ -106,6 +106,21 @@ bool Domain::Server::readfile(FILE *f)
 	return true;
 }
 
+bool Domain::Server::list()
+{
+	return false;
+}
+
+bool Domain::Server::get(std::string filename)
+{
+	return false;
+}
+
+bool Domain::Server::put(std::string filename)
+{
+	return false;
+}
+
 int Domain::Server::resolve_server()
 {
 	// Resolve the server address and port
@@ -185,6 +200,7 @@ int Domain::Server::data_connect()
 
 	if (data_sock == INVALID_SOCKET) {
 		printf("Unable to connect to server!\n");
+		printf("connect failed with error: %d\n", WSAGetLastError());
 		WSACleanup();
 		return 1;
 	}
@@ -213,6 +229,7 @@ std::string Domain::Server::get_command()
 
 int Domain::Server::parse_command(std::string pcommand)
 {	
+	std::string filename = "";
 	if (pcommand == "") return 1;
 	std::cout << "Command recieved: " << pcommand << "\n";
 	
@@ -220,7 +237,29 @@ int Domain::Server::parse_command(std::string pcommand)
 	{
 		resolve_client();
 		data_connect();
+		list();
+		clean_up_data();
 	}
+	else if (pcommand.substr(0, pcommand.find('|')) == "get") 
+	{
+		filename = pcommand.substr(pcommand.find('|') + 1, pcommand.length() - 1);
+		std::cout << filename << std::endl;
+		resolve_client();
+		data_connect();
+		get(filename);
+		clean_up_data();
+	}
+	else if (pcommand.substr(0, pcommand.find('|')) == "put") 
+	{
+		filename = pcommand.substr(pcommand.find('|') + 1, pcommand.length() - 1);
+		std::cout << filename << std::endl;
+		resolve_client();
+		data_connect();
+		get(filename);
+		clean_up_data();
+	}
+	else 
+	{}
 	return 0;
 }
 
@@ -264,8 +303,16 @@ std::string Domain::Server::get_client_ip()
 }
 
 int Domain::Server::clean_up()
-{
+{   
+	iResult = shutdown(listen_sock, SD_SEND);
+	if(iResult == SOCKET_ERROR){
+		printf("shutdown failed with error: %d\n", WSAGetLastError());
+		closesocket(listen_sock);
+		WSACleanup();
+		return 1;
+	}
 	closesocket(listen_sock);
+
 	// shutdown the connection since we're done
 	iResult = shutdown(client_sock, SD_SEND);
 	if (iResult == SOCKET_ERROR) {
@@ -278,6 +325,19 @@ int Domain::Server::clean_up()
 	// cleanup
 	closesocket(client_sock);
 	WSACleanup();
+	return 0;
+}
+
+int Domain::Server::clean_up_data()
+{
+	iResult = shutdown(data_sock, SD_BOTH);
+	if (iResult == SOCKET_ERROR) {
+		printf("shutdown failed with error: %d\n", WSAGetLastError());
+		closesocket(data_sock);
+		WSACleanup();
+		return 1;
+	}
+	closesocket(data_sock);
 	return 0;
 }
 
