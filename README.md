@@ -3,33 +3,40 @@ Repository for CPSC 471 group project in Fall 2018
 
 
 Group Members:
-	Noah Roberson ncroberson@csu.fullerton.edu
-	Burke Masles burkemasles@csu.fullerton.edu
-	Mohamed Samatar msamatar@csu.fullerton.edu
+    Noah Roberson ncroberson@csu.fullerton.edu
+    Burke Masles burkemasles@csu.fullerton.edu
+    Mohamed Samatar msamatar@csu.fullerton.edu
 
 Programming language: C++
 
-How to Execute Program:
-	
-	This program only runs on Windows computers as it uses 	Windows network APIs.
+How to use Program:
+    
+Note: This program only runs on Windows computers as it uses  Windows network APIs.
+
+To build: Open solution file in Visual Studio 15 or higher. Build solution to generate executables at default debug location.
+
+Important:
+Server and Client utitlize the paths <root_folder>\CPS471_Project\files\server and \files\client respectively, as locations for getting and putting files.
+
+To invoke program:
 
 Server:
-	1. cd to folder containing FTP_Server.exe
-	2. Invoke server as "FTP_Server.exe <port>" with port being 	a port number from 0-65535
-	3. server is now listening for connections on <port>.
+    1. cd to folder containing FTP_Server.exe
+    2. Invoke server as "FTP_Server.exe <port>" with port being a port number from 0-65535
+    3. server is now listening for connections on <port>.
 Client: 
-	1. cd to folder containiner FTP_Client.exe
-	2. Invoke client as "FTP_Client.exe <host> <port>" with host 	being the hostname of the server, and port being the 	corresponding server listening port. 
-	3. client will now attempt to make a connection with the 	server, and either fail with error or be ready for commands.
-	4. an ftp> prompt will be displayed and commands are able to 	be sent to the server.
-		Commands:
-		- "ftp> help" - displays command help information
-		
-		- "ftp> get <filename>" - sends a request to server to 			retrieve file with name <filename>    
-		
-		- "ftp> put <filename>" - sends a request to server to 			send file with name <filename>
-		
-		- "ftp> quit" - destroys ftp session and exits client
+    1. cd to folder containing FTP_Client.exe
+    2. Invoke client as "FTP_Client.exe <host> <port>" with host being the hostname of the server, and port being the corresponding server listening port. 
+    3. client will now attempt to make a connection with the server, and either fail with error or be ready for commands.
+    4. an ftp> prompt will be displayed and commands are able to   be sent to the server.
+        Commands:
+        - "ftp> help" - displays command help information
+        
+        - "ftp> get <filename>" - sends a request to server to retrieve file with name <filename>    
+        
+        - "ftp> put <filename>" - sends a request to server to send file with name <filename>
+        
+        - "ftp> quit" - destroys ftp session and exits client
 
 Notes:
 
