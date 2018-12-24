@@ -9,13 +9,12 @@
 #include <stdio.h>
 #include <iostream>
 
-// Need to link with Ws2_32.lib, Mswsock.lib, and Advapi32.lib
 #pragma comment (lib, "Ws2_32.lib")
 #pragma comment (lib, "Mswsock.lib")
 #pragma comment (lib, "AdvApi32.lib")
 
 #define DEFAULT_BUFLEN 512
-#define DEFAULT_PORT "21000"
+#define DEFAULT_PORT "21"
 
 namespace Domain 
 {
@@ -24,7 +23,6 @@ namespace Domain
 	public:
 		Client();
 		int init();
-		//int resolve(std::string host, std::string port);
 		int resolve_client();
 		int resolve_server(std::string host, std::string port);
 		int cli_connect();
@@ -39,7 +37,6 @@ namespace Domain
 		std::string get_path();
 		bool sendcommand(std::string command);
 		int listen_for_data();
-		unsigned char recieveresponse();
 		int clean_up();
 		int clean_up_data();
 	private:
