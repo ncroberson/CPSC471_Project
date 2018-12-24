@@ -37,7 +37,7 @@ namespace Domain
 		bool get(std::string filename);
 		bool put(std::string filename);
 		std::string get_path();
-		int resolve_server();
+		int resolve_server(std::string port);
 		int resolve_client();
 		int control_connect();
 		int data_connect();
@@ -47,7 +47,9 @@ namespace Domain
 		std::string get_client_ip();
 		int clean_up();
 		int clean_up_data();
+		int clean_up_control();
 		bool getCloseConn();
+		void setCloseConn(bool conn);
 	private:
 		SOCKET listen_sock;
 		SOCKET client_sock;

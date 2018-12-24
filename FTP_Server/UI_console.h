@@ -12,9 +12,11 @@ namespace UI_Server
 		UI_console();
 		UI_console(Domain::Server*);
 		void mainloop();
+		void setparams(std::string p);
 	private:
 		Domain::Server * server;
 		bool quit_loop;
+		std::string port;
 	};
 }
 

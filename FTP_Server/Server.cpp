@@ -41,7 +41,6 @@ bool Domain::Server::senddata(void * buf, int buflen)
 		{
 			if (WSAGetLastError() == WSAEWOULDBLOCK)
 			{
-				// optional: use select() to check for timeout to fail the send
 				continue;
 			}
 			return false;
@@ -129,7 +128,6 @@ bool Domain::Server::readdata(void *buf, int buflen)
 		{
 			if (WSAGetLastError() == WSAEWOULDBLOCK)
 			{
-				// optional: use select() to check for timeout to fail the read
 				continue;
 			}
 			return false;
@@ -175,8 +173,10 @@ bool Domain::Server::readfile(FILE *f)
 			} while (offset < num);
 			filesize -= num;
 		} while (filesize > 0);
+		return true;
 	}
-	return true;
+	return false;
+	
 }
 
 bool Domain::Server::list()
@@ -217,7 +217,11 @@ bool Domain::Server::get(std::string filename)
 		fclose(file);
 		return success;
 	}
-	else return false;
+	else 
+	{
+		sendlong(NULL);
+		return false;
+	}
 }
 
 bool Domain::Server::put(std::string filename)
@@ -230,6 +234,12 @@ bool Domain::Server::put(std::string filename)
 	{
 		bool success = readfile(file);
 		fclose(file);
+		if (!success) 
+		{	
+			std::string path = get_path();
+			path += filename;
+			remove(path.c_str());
+		}
 		return success;
 	}
 	else return false;
@@ -252,10 +262,10 @@ std::string Domain::Server::get_path()
 	return path;
 }
 
-int Domain::Server::resolve_server()
+int Domain::Server::resolve_server(std::string port)
 {
 	// Resolve the server address and port
-	iResult = getaddrinfo(NULL, DEFAULT_PORT, &hints, &result);
+	iResult = getaddrinfo(NULL, port.c_str(), &hints, &result);
 	if (iResult != 0) {
 		printf("getaddrinfo failed with error: %d\n", iResult);
 		WSACleanup();
@@ -269,22 +279,12 @@ int Domain::Server::resolve_client()
 	char str[INET_ADDRSTRLEN];
 	PCSTR client_ip = inet_ntop(AF_INET, &(client_addr.sin_addr), str, INET_ADDRSTRLEN);
 	// Resolve the server address and port
-	iResult = getaddrinfo(client_ip, "20000", &hints, &result);
+	iResult = getaddrinfo(client_ip, "20", &hints, &result);
 	if (iResult != 0) {
 		printf("getaddrinfo failed with error: %d\n", iResult);
 		WSACleanup();
 		return 1;
 	}
-
-	//todo delete
-//print host addresses for debugging purposes
-	for (ptr = result; ptr != nullptr; ptr = ptr->ai_next)
-	{
-		char host[256];
-		getnameinfo(ptr->ai_addr, ptr->ai_addrlen, host, sizeof(host), NULL, 0, NI_NUMERICHOST);
-		printf("%s\n", host);
-	}
-	return 0;
 }
 
 int Domain::Server::control_connect()
@@ -295,8 +295,7 @@ int Domain::Server::control_connect()
 	client_sock = accept(listen_sock, (sockaddr*)&client_addr, &addrlen);
 	if (client_sock == INVALID_SOCKET) {
 		printf("accept failed with error: %d\n", WSAGetLastError());
-		closesocket(listen_sock);
-		WSACleanup();
+		closesocket(client_sock);
 		return 1;
 	}
 	return 0;
@@ -313,7 +312,6 @@ int Domain::Server::data_connect()
 			ptr->ai_protocol);
 		if (data_sock == INVALID_SOCKET) {
 			printf("socket failed with error: %ld\n", WSAGetLastError());
-			WSACleanup();
 			return 1;
 		}
 
@@ -321,7 +319,6 @@ int Domain::Server::data_connect()
 		iResult = connect(data_sock, ptr->ai_addr, (int)ptr->ai_addrlen);
 		if (iResult == SOCKET_ERROR) {
 			closesocket(data_sock);
-			data_sock = INVALID_SOCKET;
 			continue;
 		}
 		break;
@@ -332,7 +329,6 @@ int Domain::Server::data_connect()
 	if (data_sock == INVALID_SOCKET) {
 		printf("Unable to connect to server!\n");
 		printf("connect failed with error: %d\n", WSAGetLastError());
-		WSACleanup();
 		return 1;
 	}
 
@@ -349,7 +345,7 @@ std::string Domain::Server::get_command()
 	{
 		s.append(buf, buf + getResult);
 	}
-	else if (getResult == SOCKET_ERROR) 
+	else
 	{
 		close_connection = true;
 	}
@@ -374,7 +370,6 @@ int Domain::Server::parse_command(std::string pcommand)
 	else if (pcommand.substr(0, pcommand.find('|')) == "get") 
 	{
 		filename = pcommand.substr(pcommand.find('|') + 1, pcommand.length() - 1);
-		std::cout << filename << std::endl;
 		resolve_client();
 		data_connect();
 		get(filename);
@@ -383,14 +378,15 @@ int Domain::Server::parse_command(std::string pcommand)
 	else if (pcommand.substr(0, pcommand.find('|')) == "put") 
 	{
 		filename = pcommand.substr(pcommand.find('|') + 1, pcommand.length() - 1);
-		std::cout << filename << std::endl;
 		resolve_client();
 		data_connect();
 		put(filename);
 		clean_up_data();
 	}
 	else 
-	{}
+	{
+		close_connection = true;
+	}
 	return 0;
 }
 
@@ -400,7 +396,6 @@ int Domain::Server::listen_for_conn()
 	if (listen_sock == INVALID_SOCKET) {
 		printf("socket failed with error: %ld\n", WSAGetLastError());
 		freeaddrinfo(result);
-		WSACleanup();
 		return 1;
 	}
 
@@ -410,7 +405,7 @@ int Domain::Server::listen_for_conn()
 		printf("bind failed with error: %d\n", WSAGetLastError());
 		freeaddrinfo(result);
 		closesocket(listen_sock);
-		WSACleanup();
+		close_connection = true;
 		return 1;
 	}
 
@@ -420,7 +415,7 @@ int Domain::Server::listen_for_conn()
 	if (iResult == SOCKET_ERROR) {
 		printf("listen failed with error: %d\n", WSAGetLastError());
 		closesocket(listen_sock);
-		WSACleanup();
+		close_connection = true;
 		return 1;
 	}
 
@@ -435,26 +430,7 @@ std::string Domain::Server::get_client_ip()
 
 int Domain::Server::clean_up()
 {   
-	iResult = shutdown(listen_sock, SD_SEND);
-	if(iResult == SOCKET_ERROR){
-		printf("shutdown failed with error: %d\n", WSAGetLastError());
-		closesocket(listen_sock);
-		WSACleanup();
-		return 1;
-	}
 	closesocket(listen_sock);
-
-	// shutdown the connection since we're done
-	iResult = shutdown(client_sock, SD_SEND);
-	if (iResult == SOCKET_ERROR) {
-		printf("shutdown failed with error: %d\n", WSAGetLastError());
-		closesocket(client_sock);
-		WSACleanup();
-		return 1;
-	}
-
-	// cleanup
-	closesocket(client_sock);
 	WSACleanup();
 	return 0;
 }
@@ -465,14 +441,33 @@ int Domain::Server::clean_up_data()
 	if (iResult == SOCKET_ERROR) {
 		printf("shutdown failed with error: %d\n", WSAGetLastError());
 		closesocket(data_sock);
-		WSACleanup();
 		return 1;
 	}
 	closesocket(data_sock);
 	return 0;
 }
 
+int Domain::Server::clean_up_control()
+{
+	// shutdown the connection since we're done
+	iResult = shutdown(client_sock, SD_SEND);
+	if (iResult == SOCKET_ERROR) {
+		printf("shutdown failed with error: %d\n", WSAGetLastError());
+		closesocket(client_sock);
+		return 1;
+	}
+
+	// cleanup
+	closesocket(client_sock);
+	return 0;
+}
+
 bool Domain::Server::getCloseConn()
 {
 	return close_connection;
+}
+
+void Domain::Server::setCloseConn(bool conn)
+{
+	close_connection = conn;
 }

@@ -140,7 +140,7 @@ void UI_Client::UI_console::run_command(std::string command, std::string fname)
 
 	if (!success) 
 	{
-		std::cout << "Command failed:\n";
+		std::cout << "Command failed: ";
 	}
 	std::cout << message << "\n";
 }
@@ -160,18 +160,34 @@ bool UI_Client::UI_console::get(std::string fname, std::string & message)
 		fopen_s(&file, path.c_str(), "wb");
 		if (file != NULL) 
 		{
-			client->readfile(file);
+			bool success = client->readfile(file, bytes_read);
 			fclose(file);
+			if (!success)
+			{
+				std::string path = client->get_path();
+				path += fname;
+				remove(path.c_str());
+				message = "get failed.";
+				client->clean_up_data();
+				return false;
+			}
 		}
-		
-		else return false;
+		else
+		{
+			message = "get failed.";
+			client->clean_up_data();
+			return false;
+		}
 		message = "get succeeded.";
+		std::cout << "File: " << fname << std::endl;
+		std::cout << "Bytes recieved: " << bytes_read << std::endl;
 		client->clean_up_data();
 		return true;
 	}
 	else
 	{
 		message = "get failed.";
+		client->clean_up_data();
 		return false;
 	}
 }
@@ -184,24 +200,33 @@ bool UI_Client::UI_console::put(std::string fname, std::string & message)
 	if (client->sendcommand(command)) 
 	{
 		client->data_connect();
-		long bytes_read;
+		long bytes_sent;
 		std::string path = client->get_path();
 		path += fname;
 		FILE *file;
 		fopen_s(&file, path.c_str(), "rb");
 		if (file != NULL)
 		{
-			client->sendfile(file);
+			client->sendfile(file, bytes_sent);
 			fclose(file);
 		}
-		else return false;
+		else 
+		{
+			client->sendlong(NULL);
+			message = "put failed.";
+			client->clean_up_data();
+			return false;
+		}
 		message = "put succeeded.";
+		std::cout << "File: " << fname << std::endl;
+		std::cout << "Bytes sent: " << bytes_sent << std::endl;
 		client->clean_up_data();
 		return true;
 	}
 	else 
 	{
 		message = "put failed.";
+		client->clean_up_data();
 		return false;
 	}
 }
@@ -219,7 +244,7 @@ bool UI_Client::UI_console::list(std::string & message)
 		client->readstring(listing, bytes_read);
 		message = "list succeeded.";
 		std::cout << listing << std::endl;
-		std::cout << "Bytes transfered: " << bytes_read << std::endl;
+		std::cout << "Bytes recieved: " << bytes_read << std::endl;
 		client->clean_up_data();
 		return true;
 	}

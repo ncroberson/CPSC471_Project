@@ -30,39 +30,9 @@ int Domain::Client::init()
 	return 0;
 }
 
-//int Domain::Client::resolve(std::string host, std::string port)
-//{
-//	char* chost;
-//	if (host == "") 
-//	{
-//		chost = NULL;
-//	}
-//	else chost = const_cast<char *>(host.c_str());
-//	std::string res_port = port;
-//	if (res_port == "0") res_port = DEFAULT_PORT;
-//	// Resolve the server address and port
-//	iResult = getaddrinfo(chost, res_port.c_str(), &hints, &result);
-//	if (iResult != 0) {
-//		printf("getaddrinfo failed with error: %d\n", iResult);
-//		WSACleanup();
-//		return 1;
-//	}
-//
-//	//todo delete
-//	//print host addresses for debugging purposes
-//	for (ptr = result; ptr != nullptr; ptr = ptr->ai_next)
-//	{
-//		char host[256];
-//		getnameinfo(ptr->ai_addr, ptr->ai_addrlen, host, sizeof(host), NULL, 0, NI_NUMERICHOST);
-//		printf("%s\n", host);
-//	}
-//
-//	return 0;
-//}
-
 int Domain::Client::resolve_client()
 {
-	iResult = getaddrinfo(NULL, "20000", &hints, &result);
+	iResult = getaddrinfo(NULL, "20", &hints, &result);
 	if (iResult != 0) {
 		printf("getaddrinfo failed with error: %d\n", iResult);
 		return 1;
@@ -139,7 +109,6 @@ bool Domain::Client::senddata(void * buf, int buflen)
 		{
 			if (WSAGetLastError() == WSAEWOULDBLOCK)
 			{
-				// optional: use select() to check for timeout to fail the send
 				continue;
 			}
 			return false;
@@ -152,11 +121,12 @@ bool Domain::Client::senddata(void * buf, int buflen)
 	return true;
 }
 
-bool Domain::Client::sendfile(FILE * f)
+bool Domain::Client::sendfile(FILE * f, long &bytes)
 {
 	fseek(f, 0, SEEK_END);
 	long filesize = ftell(f);
 	rewind(f);
+	bytes = 0;
 	if (filesize == EOF)
 		return false;
 	if (!sendlong(filesize))
@@ -173,6 +143,7 @@ bool Domain::Client::sendfile(FILE * f)
 			if (!senddata(buffer, num))
 				return false;
 			filesize -= num;
+			bytes += num;
 		} while (filesize > 0);
 	}
 	return true;
@@ -196,7 +167,6 @@ bool Domain::Client::readdata(void * buf, int buflen)
 		{
 			if (WSAGetLastError() == WSAEWOULDBLOCK)
 			{
-				// optional: use select() to check for timeout to fail the read
 				continue;
 			}
 			return false;
@@ -219,11 +189,12 @@ bool Domain::Client::readlong(long * value)
 	return true;
 }
 
-bool Domain::Client::readfile(FILE * f)
+bool Domain::Client::readfile(FILE * f, long &bytes)
 {
 	long filesize;
 	if (!readlong(&filesize))
 		return false;
+	bytes = 0;
 	if (filesize > 0)
 	{
 		char buffer[1024];
@@ -241,9 +212,11 @@ bool Domain::Client::readfile(FILE * f)
 				offset += written;
 			} while (offset < num);
 			filesize -= num;
+			bytes += num;
 		} while (filesize > 0);
+		return true;
 	}
-	return true;
+	return false;
 }
 
 bool Domain::Client::readstring(std::string& output, long &bytes) 
@@ -329,21 +302,6 @@ int Domain::Client::listen_for_data()
 
 
 	return 0;
-}
-
-unsigned char Domain::Client::recieveresponse()
-{
-	int getResult = 0;
-	char buf[1];
-	if ((getResult = recv(data_sock, buf, 1, 0)) > 0)
-	{
-		return buf[1];
-	}
-	else if (getResult == SOCKET_ERROR)
-	{
-		return 255;
-	}
-	else return 0;
 }
 
 int Domain::Client::clean_up()

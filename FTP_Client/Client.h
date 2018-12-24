@@ -30,11 +30,11 @@ namespace Domain
 		int cli_connect();
 		int data_connect();
 		bool senddata(void *buf, int buflen);
-		bool sendfile(FILE *f);
+		bool sendfile(FILE *f, long &bytes);
 		bool sendlong(long value);
 		bool readdata(void *buf, int buflen);
 		bool readlong(long *value);
-		bool readfile(FILE *f);
+		bool readfile(FILE *f, long &bytes);
 		bool readstring(std::string& output, long &bytes);
 		std::string get_path();
 		bool sendcommand(std::string command);
